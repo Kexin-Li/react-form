@@ -1,3 +1,3 @@
-import Form from './Form';
+import createForm from './createForm';
 
-export default Form;
+export default createForm;
