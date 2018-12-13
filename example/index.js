@@ -11,7 +11,7 @@ class App extends React.Component {
 
   onSubmit(e) {
     e.preventDefault();
-    const res = this.props.form.validate('normalOne');
+    const res = this.props.form.validate();
     console.log(res);
   }
 
@@ -23,6 +23,7 @@ class App extends React.Component {
       <form onSubmit={this.onSubmit}>
         <p>simple input one</p>
         <input {...getFieldProps('normalOne', { initialValue: 'normal input one' })} />
+        <input {...getFieldProps('normalTwo', { initialValue: 'normal input two' })} />
         <button>Submit</button>
       </form>
     );

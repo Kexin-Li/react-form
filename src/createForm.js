@@ -1,5 +1,5 @@
 import React from 'react';
-import { argumentContainer, getValueFromEvent } from './utils';
+import { getValueFromEvent } from './utils';
 
 function createForm() {
   function decorate(WrappedComponent) {
@@ -8,10 +8,10 @@ function createForm() {
         super(props);
 
         this.state = {};
-        // 缓存的事件
+        // 事件
         this.cacheAction = {};
-        // 初始值
-        this.initialValue = '';
+        // 初始值及校验信息
+        this.fieldsMeta = {};
       }
 
       onChange = (name, event) => {
@@ -19,6 +19,7 @@ function createForm() {
         this.setField(name, { name, value });
       };
 
+      // 目前只支持 onChange 事件
       bindTrigger = (name, action, fn) => {
         const cache = (this.cacheAction[name] = this.cacheAction[name] || {});
         if (!cache[action]) {
@@ -30,7 +31,6 @@ function createForm() {
       getFieldProps = (name, options = {}) => {
         const { initialValue = '', trigger = 'onChange' } = options;
         const inputProps = { value: initialValue };
-        this.initialValue = initialValue;
         inputProps[trigger] = this.bindTrigger(name, trigger, this.onChange);
 
         const field = this.getField(name);
@@ -38,11 +38,28 @@ function createForm() {
           inputProps.value = field.value;
         }
 
+        const fieldMeta = this.fieldsMeta[name] || {};
+        fieldMeta.initialValue = initialValue;
+        this.fieldsMeta[name] = fieldMeta;
+
         return inputProps;
       };
 
-      validate = (name, cb) => {
-        return this.getField(name, true);
+      validate = () => {
+        const names = Object.keys(this.fieldsMeta);
+        const allValues = {};
+
+        names.map(name => {
+          const fieldMeta = this.getFieldMeta(name);
+          const field = this.getField(name, true);
+
+          // 数据未改变的话直接读取初始值
+          if (!('value' in field) && 'initialValue' in fieldMeta) {
+            field.value = fieldMeta.initialValue;
+          }
+          allValues[name] = field.value;
+        });
+        return allValues;
       };
 
       getForm = () => {
@@ -52,6 +69,7 @@ function createForm() {
         };
       };
 
+      // 存入单个标签的数据
       setField(name, field) {
         let stat = { [name]: field };
         if (typeof name === 'object') {
@@ -63,20 +81,23 @@ function createForm() {
       getField(name, copy) {
         const ret = this.state[name];
         if (copy) {
-          // TODO: have some problem
           if (ret) {
             return { ...ret, name };
           }
-          return { name, value: this.initialValue };
+          return { name };
         }
         return ret;
+      }
+
+      getFieldMeta(name) {
+        return this.fieldsMeta[name];
       }
 
       render() {
         return <WrappedComponent form={this.getForm()} {...this.props} />;
       }
     }
-    return argumentContainer(Form, WrappedComponent);
+    return Form;
   }
   return decorate;
 }
